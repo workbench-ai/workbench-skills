@@ -1,0 +1,157 @@
+metadata:
+  id: codex-review-loop
+  name: Codex Review Loop
+  enabled: true
+  description: Webhook-driven implementation and review workflow for the Codex harness.
+
+state:
+  initial: in_progress
+  terminal:
+    - done
+    - failed
+    - canceled
+  on_attempt:
+    completed: ready_for_review
+    failed: failed
+    canceled: canceled
+
+inputs:
+  - id: reviewer_feedback
+    label: Reviewer feedback
+    type: textarea
+    required: true
+
+triggers:
+  webhook:
+    hmac_secret_env: WB_REVIEW_WEBHOOK_SECRET
+
+workspace:
+  prune_ttl_seconds: 604800
+
+hooks:
+  after_create: |
+    git init .
+    git config user.email workbench@example.com
+    git config user.name "Workbench"
+    test -f README.md || printf '# Scratch workspace\n' > README.md
+    mkdir -p .workbench/feedback
+    git add README.md
+    git commit -m "seed workspace" || true
+  before_run: |
+    test -f package.json && npm install || true
+  after_run: null
+  before_remove: |
+    echo "Pruning $WB_WORKSPACE_PATH"
+  timeout_ms: 60000
+  env:
+    CI: "1"
+
+stages:
+  - id: implement
+    session: resume
+    prompt: |
+      You are working on workflow {{ workflow.id }}.
+      Execution: {{ execution.id }}
+      Attempt: {{ attempt.number }}
+      Stage: {{ stage.id }}
+      Trigger type: {{ trigger.trigger_type }}
+
+      Before making changes, check these feedback files:
+      - .workbench/feedback/validate.md
+      - .workbench/feedback/reviewer-feedback.md
+
+      If either file exists, read it first and treat it as required context for this loop.
+      Fix every issue it describes before moving on.
+
+      Make the requested changes in the workspace and explain what you changed.
+  - id: validate
+    session: previous
+    prompt: |
+      Continue from the implementation stage session and review the workspace changes.
+      Summarize any blockers or confirm the work is ready for review.
+    gate:
+      command: |
+        set -euo pipefail
+
+        mkdir -p .workbench/feedback
+        feedback_file=.workbench/feedback/validate.md
+        log_file=.workbench/feedback/validate.log
+        : > "$log_file"
+
+        failed=0
+
+        if [ -f package.json ]; then
+          npm test >>"$log_file" 2>&1 || failed=1
+          npm run lint --if-present >>"$log_file" 2>&1 || failed=1
+        else
+          printf '%s\n' 'Validation expected package.json but none was found.' >>"$log_file"
+          failed=1
+        fi
+
+        if [ "$failed" -eq 0 ]; then
+          rm -f "$feedback_file" "$log_file"
+          exit 0
+        fi
+
+        {
+          echo '# Validation failed'
+          echo
+          echo 'The previous validation loop failed. Fix every issue below before handing work back to validation.'
+          echo
+          echo '## Failed checks'
+          echo '- npm test'
+          echo '- npm run lint --if-present'
+          echo
+          echo '## Stage context'
+          echo "- Stage: $WB_STAGE_ID"
+          echo "- Run: $WB_STAGE_RUN_INDEX"
+          echo
+          echo '## Recent validator output'
+          tail -n 200 "$log_file"
+        } > "$feedback_file"
+
+        exit 1
+      reject_to: implement
+      max_cycles: 2
+      timeout_ms: 10000
+
+actions:
+  - id: request_changes
+    label: Request Changes
+    command: |
+      set -euo pipefail
+      mkdir -p .workbench/feedback
+      printf '%s\n' "$WB_ACTION_INPUT_REVIEWER_FEEDBACK" > .workbench/feedback/reviewer-feedback.md
+    confirm: true
+    inputs:
+      - ref: reviewer_feedback
+    timeout_ms: 30000
+    set_state: in_progress
+    start_new_attempt: true
+  - id: approve
+    label: Approve
+    command: |
+      set -euo pipefail
+      rm -f .workbench/feedback/reviewer-feedback.md .workbench/feedback/validate.md .workbench/feedback/validate.log
+      printf 'approved %s\n' "$WB_EXECUTION_ID"
+    confirm: true
+    timeout_ms: 60000
+    set_state: done
+
+harness:
+  id: openai/codex
+  auth:
+    strategy: secret_ref
+    ref: OPENAI_API_KEY
+  model: gpt-5.4
+  effort: xhigh
+  turn_timeout_ms: 3600000
+  stall_timeout_ms: 300000
+  retry:
+    max_retries: 2
+    base_delay_ms: 10000
+    max_backoff_ms: 120000
+  cancel:
+    graceful_timeout_ms: 15000
+    hard_kill_timeout_ms: 5000
+  config: {}

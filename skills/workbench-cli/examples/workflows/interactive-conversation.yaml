@@ -1,0 +1,83 @@
+metadata:
+  id: interactive-conversation
+  name: Interactive Conversation
+  description: Workflow-owned back-and-forth example using same-execution manual continuation.
+
+state:
+  initial: in_progress
+  terminal:
+    - done
+    - failed
+    - canceled
+  on_attempt:
+    completed: waiting_for_input
+    failed: failed
+    canceled: canceled
+
+triggers:
+  manual:
+    inputs:
+      - ref: message
+        payload_key: message
+
+inputs:
+  - id: message
+    label: Message
+    type: textarea
+    required: true
+
+workspace: {}
+
+hooks:
+  after_create: |
+    git init .
+    git config user.email workbench@example.com
+    git config user.name "Workbench"
+    : > conversation.log
+    cat <<'EOF' > result.txt
+    message_count: 0
+    latest_message:
+    EOF
+    git add conversation.log result.txt
+    git commit -m "seed conversation workspace" || true
+
+stages:
+  - id: respond
+    session: resume
+    prompt: |
+      Continue the same workspace conversation for execution {{ execution.id }}.
+      The latest inbound message is:
+      {{ trigger.payload.message }}
+
+      Use the existing session state and current workspace contents.
+      Run the following commands exactly and do not make any other changes:
+
+      cat <<'EOF' >> conversation.log
+      {{ trigger.payload.message }}
+      EOF
+      MESSAGE_COUNT="$(wc -l < conversation.log | tr -d '[:space:]')"
+      cat <<EOF > result.txt
+      message_count: ${MESSAGE_COUNT}
+      latest_message: {{ trigger.payload.message }}
+      workflow: {{ workflow.id }}
+      execution: {{ execution.id }}
+      EOF
+
+actions:
+  - id: close
+    label: Close Conversation
+    command: printf 'closed\n' > conversation-closed.txt
+    confirm: true
+    timeout_ms: 30000
+    set_state: done
+
+harness:
+  id: openai/codex
+  auth:
+    strategy: secret_ref
+    ref: OPENAI_API_KEY
+  model: gpt-5.4
+  effort: medium
+  turn_timeout_ms: 120000
+  stall_timeout_ms: 60000
+  config: {}

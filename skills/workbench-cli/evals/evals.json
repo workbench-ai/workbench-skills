@@ -1,0 +1,38 @@
+{
+  "skill_name": "workbench-cli",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Set up Workbench in this git repo and give me a starter review workflow I can run locally.",
+      "expected_output": "The response uses the CLI-first bootstrap flow and prefers `workbench init . --template <starter>` over manual file creation.",
+      "files": [],
+      "expectations": [
+        "Uses `workbench init . --template codex-review-loop` or another concrete bundled starter",
+        "Avoids telling the user to hand-create `.workbench` or copy workflow YAML manually",
+        "Mentions validation as the next step after editing workflow YAML"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "I edited a workflow file and now I want to run it locally. What exact Workbench CLI flow should I use?",
+      "expected_output": "The response validates the workflow, ensures a persistent repo-local runtime exists before execution creation, and then runs the workflow through the CLI.",
+      "files": [],
+      "expectations": [
+        "Uses `workbench validate` before execution creation",
+        "Uses `workbench start` or `workbench open` before `workbench execution run` when operating locally",
+        "Does not invent removed commands such as `execution continue` or `workflow inputs`"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "I have a waiting execution. Show me how to continue it and inspect the trace and transcript afterward.",
+      "expected_output": "The response resumes the same waiting execution with `execution resume` and points to the correct inspection commands.",
+      "files": [],
+      "expectations": [
+        "Uses `workbench execution resume <execution-id>` rather than a deleted continuation command",
+        "Mentions that resume applies to a non-terminal execution waiting for continuation",
+        "Uses `workbench execution trace` and `workbench execution transcript` for inspection"
+      ]
+    }
+  ]
+}

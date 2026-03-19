@@ -1,0 +1,64 @@
+metadata:
+  name: Manual Review Loop
+  description: Manual run workflow with reviewer actions.
+
+state:
+  initial: in_progress
+  terminal:
+    - done
+    - failed
+    - canceled
+  on_attempt:
+    completed: ready_for_review
+    failed: failed
+    canceled: canceled
+
+inputs:
+  - id: reviewer_feedback
+    label: Reviewer feedback
+    type: textarea
+    required: true
+
+triggers: {}
+
+workspace:
+  mode: project
+  prune_ttl_seconds: 604800
+
+hooks:
+  after_create: null
+  before_run: null
+  after_run: null
+  before_remove: null
+  timeout_ms: 60000
+
+stages:
+  - id: implement
+    prompt: |
+      Complete the requested work directly in the active project checkout for this attempt.
+      Summarize the result and any follow-up notes for the reviewer.
+
+actions:
+  - id: request_changes
+    label: Request Changes
+    command: ./scripts/request-changes.sh
+    inputs:
+      - ref: reviewer_feedback
+    timeout_ms: 30000
+    set_state: in_progress
+    start_new_attempt: true
+  - id: approve
+    label: Approve
+    command: ./scripts/approve.sh
+    confirm: true
+    timeout_ms: 30000
+    set_state: done
+
+harness:
+  id: openai/codex
+  auth:
+    strategy: secret_ref
+    ref: OPENAI_API_KEY
+  model: gpt-5.4
+  effort: medium
+  config: {}

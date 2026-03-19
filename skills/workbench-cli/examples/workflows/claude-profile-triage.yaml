@@ -1,0 +1,84 @@
+metadata:
+  id: claude-profile-triage
+  name: Claude Profile Triage
+  enabled: true
+  description: Cron-driven triage workflow that reads Claude auth from a user-managed profile path.
+
+state:
+  initial: triage_pending
+  terminal:
+    - done
+    - failed
+    - canceled
+  on_attempt:
+    completed: ready_for_review
+    failed: failed
+    canceled: canceled
+
+triggers:
+  cron:
+    - schedule: "0 13 * * 1-5"
+      timezone: America/New_York
+      payload:
+        queue: support
+        severity: high
+
+workspace:
+  prune_ttl_seconds: 604800
+
+hooks:
+  after_create: |
+    git init .
+    git config user.email workbench@example.com
+    git config user.name "Workbench"
+    test -f notes.md || printf '# Triage Notes\n' > notes.md
+    git add notes.md
+    git commit -m "seed workspace" || true
+  before_run: null
+  after_run: null
+  before_remove: null
+  timeout_ms: 60000
+
+stages:
+  - id: triage
+    prompt: |
+      Review the current workspace and update triage notes.
+      Workflow: {{ workflow.id }}
+      Execution: {{ execution.id }}
+      Attempt: {{ attempt.number }}
+      Trigger type: {{ trigger.trigger_type }}
+  - id: summarize
+    prompt: |
+      Produce a concise summary for a reviewer and list any follow-up work.
+
+actions:
+  - id: mark_done
+    label: Mark Done
+    command: ./scripts/mark-done.sh
+    confirm: true
+    timeout_ms: 30000
+    set_state: done
+
+harness:
+  id: anthropic/claude-code
+  auth:
+    strategy: profile_path
+    path: /Users/alice/.config/claude-workflow-profile
+  model: claude-sonnet-4-6
+  effort: medium
+  retry:
+    max_retries: 1
+    base_delay_ms: 15000
+    max_backoff_ms: 60000
+  cancel:
+    graceful_timeout_ms: 15000
+    hard_kill_timeout_ms: 5000
+  config:
+    max_turns: 12
+    allowed_tools:
+      - Bash
+      - Edit
+      - Read
+      - Write
+    add_dirs:
+      - ./docs

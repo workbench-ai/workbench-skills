@@ -1,0 +1,38 @@
+metadata:
+  name: Hook-Only Deterministic
+  description: Run deterministic setup and file generation entirely through hooks.
+  enabled: true
+
+state:
+  initial: queued
+  terminal:
+    - done
+    - failed
+    - canceled
+  on_attempt:
+    completed: done
+    failed: failed
+    canceled: canceled
+
+triggers: {}
+
+workspace:
+  mode: managed
+  prune_ttl_seconds: 604800
+
+hooks:
+  after_create: |
+    git init .
+    git config user.email workbench@example.com
+    git config user.name "Workbench"
+    printf 'seed\n' > README.md
+    git add README.md
+    git commit -m "seed workspace"
+  before_run: |
+    mkdir -p artifacts
+    printf 'deterministic result\n' > artifacts/result.txt
+  after_run: null
+  before_remove: null
+  timeout_ms: 60000
+
+stages: []

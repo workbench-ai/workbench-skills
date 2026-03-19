@@ -1,0 +1,4 @@
+interface:
+  display_name: "Workbench CLI"
+  short_description: "Bootstrap, validate, run, and troubleshoot Workbench with the CLI"
+  default_prompt: "Use the Workbench CLI to bootstrap or repair this repo's Workbench setup, validate workflows, start the local runtime, run or inspect executions, and install bundled templates or skills."

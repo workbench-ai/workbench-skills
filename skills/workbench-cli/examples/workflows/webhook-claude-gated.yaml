@@ -1,0 +1,56 @@
+metadata:
+  id: webhook-claude-gated
+  name: Webhook Claude Gated
+  description: Webhook-triggered workflow with a gate-driven validation loop.
+
+state:
+  initial: triage
+  terminal:
+    - done
+    - failed
+    - canceled
+  on_attempt:
+    completed: ready_for_review
+    failed: failed
+    canceled: canceled
+
+triggers:
+  webhook:
+    hmac_secret_env: WB_WEBHOOK_SECRET
+
+workspace:
+  prune_ttl_seconds: 604800
+
+hooks:
+  after_create: |
+    git clone "$WB_PROJECT_ROOT" .
+  before_run: null
+  after_run: null
+  before_remove: null
+  timeout_ms: 60000
+
+stages:
+  - id: implement
+    prompt: |
+      Process the webhook payload for execution {{ execution.id }}.
+      Trigger type: {{ trigger.trigger_type }}.
+      Use the payload to decide what work to perform and summarize the result.
+  - id: validate
+    prompt: |
+      Review the workspace changes from the implement stage.
+      Explain whether the output is ready for review.
+    gate:
+      command: ./scripts/evaluate-validate-stage.sh
+      reject_to: implement
+      max_cycles: 2
+      timeout_ms: 10000
+
+harness:
+  id: anthropic/claude-code
+  auth:
+    strategy: secret_ref
+    ref: ANTHROPIC_API_KEY
+  model: claude-sonnet-4-6
+  effort: medium
+  config:
+    max_turns: 24
