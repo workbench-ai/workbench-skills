@@ -13,7 +13,7 @@ Bootstrap, validate, run, inspect, and troubleshoot Workbench through the `workb
 Use when:
 
 - Setting up Workbench in a git repo
-- Installing starter workflows or the bundled Workbench skill
+- Installing starter workflows
 - Authoring or validating workflow YAML
 - Starting the local runtime or inspecting executions
 - Resuming waiting executions and reviewing traces or transcripts
