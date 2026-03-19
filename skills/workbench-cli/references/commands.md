@@ -55,7 +55,7 @@ If npm auth is already configured separately, `pnpm publish:github` remains avai
 
 The CLI is repo-first, but runtime lifetime is explicit.
 
-- Repo-local setup and maintenance commands: `start`, `open`, `status`, `ps`, `close`, `init`, `template list`, `validate`, `skill install`, and `doctor`
+- Repo-local setup and maintenance commands: `start`, `open`, `status`, `ps`, `close`, `init`, `template list`, `validate`, and `doctor`
 - Runtime-backed read commands: `workflow list`, `execution list`, `execution show`, `execution history`, `execution trace`, `execution changes`, `execution preview`, and `execution transcript`
 - Runtime-backed execution-mutating commands: `execution run`, `execution resume`, `execution action run`, and `execution watch`
 
@@ -83,7 +83,7 @@ If `WB_SERVER_URL` is present in the process environment but blank, the CLI fail
 
 Read-only inspection commands do not leave a background process behind. When no local runtime is already running, they use a transient read-only runtime only for the lifetime of that command. Execution-mutating commands do not auto-start a hidden helper. If no repo-local runtime is already running, they fail and tell you to run `workbench start` or `workbench open`, or to pass `--server URL`.
 
-- `open`, `init`, `skill install`, and `doctor` accept an optional repo path.
+- `open`, `init`, and `doctor` accept an optional repo path.
 - `validate` accepts an optional target path, which may be a workflow file, a workflow directory, or a repo root.
 - If a repo-local command omits its path, Workbench walks upward from cwd until it finds a git root.
 - Non-git directories are rejected.
@@ -361,26 +361,26 @@ Env precedence is always:
 
 `WB_RUNTIME_URL` follows that same repo `.env` then `${WB_HOME}/.env` then process-environment precedence. When set, Workbench trims whitespace plus trailing slashes and uses the result as the canonical self URL exposed by the runtime.
 
-## Bundled Skill
+## Public Skill
 
-`workbench skill install` installs the canonical `workbench-cli` skill for LLMs. The authored `SKILL.md` is intentionally thin and routes the agent to the canonical references instead of restating command behavior. The installed skill tree contains:
-
-- destination: `.agents/skills/workbench-cli` in the target repo
-- this file as `references/commands.md`
-- `docs/workflow-authoring.md` as `references/workflow-authoring.md`
-- the same bundled starter workflow YAML files used by `workbench template list` and `workbench init --template ...`
-- a small `evals/evals.json` seed for regression-testing or improving the skill itself
-
-Maintainers can also export that same installable skill payload to the generated public `workbench-ai/workbench-skills` repository. The root commands are:
-
-- `pnpm skills:public:build` to regenerate `.workbench/public-skills/workbench-skills`
-- `pnpm skills:public:validate` to run upstream `skills-ref validate`, `skills add --list`, and a temp-repo install smoke test against that generated repo
-- `pnpm skills:public:publish` to require a clean source worktree, rebuild the generated repo, and push it to `WORKBENCH_SKILLS_PUBLIC_REPO_URL` or the default `https://github.com/workbench-ai/workbench-skills.git` on `WORKBENCH_SKILLS_PUBLIC_BRANCH` or `main`
-
-That public generated repo is the supported GitHub-shorthand install surface for generic `skills` users:
+The canonical `workbench-cli` skill now ships only through the public `workbench-ai/workbench-skills` repository. The authored `SKILL.md` in this private repo is intentionally thin and routes the agent to the canonical references instead of restating command behavior. Users should install the skill with the upstream `skills` CLI:
 
 ```bash
 npx skills add workbench-ai/workbench-skills --skill workbench-cli
 ```
 
-For exact syntax, use `workbench --help`, `workbench template --help`, `workbench workflow --help`, `workbench execution --help`, `workbench execution action --help`, and `workbench skill --help`.
+That public repo contains:
+
+- `skills/workbench-cli/SKILL.md`
+- this file as `references/commands.md`
+- `docs/workflow-authoring.md` as `references/workflow-authoring.md`
+- the same starter workflow YAML files referenced by `workbench template list` and `workbench init --template ...`
+- a small `evals/evals.json` seed for regression-testing or improving the skill itself
+
+Maintainers publish that repo from this monorepo with:
+
+- `pnpm skills:public:build` to regenerate `.workbench/public-skills/workbench-skills`
+- `pnpm skills:public:validate` to run upstream `skills-ref validate`, `skills add --list`, and a temp-repo install smoke test against that generated repo
+- `pnpm skills:public:publish` to require a clean source worktree, rebuild the generated repo, and push it to `WORKBENCH_SKILLS_PUBLIC_REPO_URL` or the default `https://github.com/workbench-ai/workbench-skills.git` on `WORKBENCH_SKILLS_PUBLIC_BRANCH` or `main`
+
+For exact CLI syntax, use `workbench --help`, `workbench template --help`, `workbench workflow --help`, `workbench execution --help`, and `workbench execution action --help`.
