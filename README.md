@@ -1,15 +1,46 @@
-# workbench-skills
+# Workbench Skills
 
-This repository is generated from `workbench-ai/workbench-control` commit `4215fea9bc2f3825c1e3786db5561729b017839b`.
+A collection of public skills for AI coding agents working with Workbench.
 
-Do not edit this repository by hand. Make changes in the private source monorepo, then republish the generated output.
+Skills follow the [Agent Skills](https://agentskills.io) format.
 
-## Install
+## Available Skills
+
+### workbench-cli
+
+Bootstrap, validate, run, inspect, and troubleshoot Workbench through the `workbench` CLI.
+
+Use when:
+
+- Setting up Workbench in a git repo
+- Installing starter workflows or the bundled Workbench skill
+- Authoring or validating workflow YAML
+- Starting the local runtime or inspecting executions
+- Resuming waiting executions and reviewing traces or transcripts
+
+## Installation
 
 ```bash
 npx skills add workbench-ai/workbench-skills --skill workbench-cli
 ```
 
-## Available Skills
+## Usage
 
-- `workbench-cli`: Bootstrap, validate, run, inspect, and troubleshoot Workbench through the `workbench` CLI.
+Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
+
+Examples:
+
+```text
+Set up Workbench in this repo
+Validate this workflow and tell me how to run it locally
+Resume this waiting execution and show me the trace
+```
+
+## Skill Structure
+
+Each skill contains:
+
+- `SKILL.md` - Instructions for the agent
+- `references/` - Supporting documentation loaded as needed
+- `examples/` - Example workflow files and starter material
+- `evals/` - Regression prompts for improving the skill
