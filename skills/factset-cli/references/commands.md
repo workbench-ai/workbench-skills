@@ -19,7 +19,7 @@ node dist/cli.js list
 To install the CLI globally from GitHub Packages:
 
 ```bash
-npm install -g @workbench-ai/factset-cli@0.0.3
+npm install -g @workbench-ai/factset-cli@0.0.4
 factset list
 ```
 
