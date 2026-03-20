@@ -48,6 +48,7 @@ Validated examples:
 - [Hook-only deterministic](examples/workflows/hook-only-deterministic.yaml)
 - [Interactive conversation](examples/workflows/interactive-conversation.yaml)
 - [Manual review loop](examples/workflows/manual-review-loop.yaml)
+- [Pi coding agent review](examples/workflows/pi-coding-agent-review.yaml)
 - [Webhook Claude gated](examples/workflows/webhook-claude-gated.yaml)
 
 The dedicated web `/chat` route is backed by the first-class runtime chat catalog rather than by authored workflow YAML. If you want workflow-owned back-and-forth with explicit resume semantics, use the interactive conversation pattern above: start the first turn through `POST /api/v1/workflows/:id/executions`, then append later turns to the same execution with `POST /api/v1/executions/:id/triggers/manual` while the stage uses `session: resume`.
@@ -402,7 +403,7 @@ Workbench mirrors the live execution workspace into that staged workspace before
 
 When `model` is set, Workbench passes that value through to Codex for both new and resumed headless turns. Native interactive chat launch also prefers the workflow-configured `model`; when no workflow model is configured, Codex may still fall back to the external Codex home config or cached model metadata for chat-owned launches.
 
-When `effort` is set, Workbench passes that value through to Codex headless turns and to native interactive chat launch. The portable first-party values shared by both Codex and Claude are `low`, `medium`, and `high`. Codex additionally accepts `none`, `minimal`, and `xhigh`.
+When `effort` is set, Workbench passes that value through to Codex headless turns and to native interactive chat launch. The portable first-party values shared across Codex, Claude, and Pi are `low`, `medium`, and `high`. Codex additionally accepts `none`, `minimal`, and `xhigh`.
 
 #### `harness.id: anthropic/claude-code`
 
@@ -446,7 +447,48 @@ Runtime behavior:
 - With `auth.strategy: profile_path`, Workbench copies only the portable Claude auth files from the declared path. It does not copy settings, hooks, or skills.
 - Workflow-owned Claude turns internally use `--permission-mode dontAsk`, `--setting-sources user`, hooks disabled, and slash commands enabled. Here `user` means the staged managed home, not the operator's real home directory.
 
-For first-party portability, `low`, `medium`, and `high` are the shared `effort` values supported by both Claude and Codex.
+For first-party portability, `low`, `medium`, and `high` are the shared `effort` values supported across Claude, Codex, and Pi.
+
+#### `harness.id: badlogic/pi-coding-agent`
+
+Pi supports the same authored auth vocabulary as the other first-party harnesses:
+
+```yaml
+harness:
+  id: badlogic/pi-coding-agent
+  auth:
+    strategy: secret_ref
+    ref: OPENAI_API_KEY
+  model: openai/gpt-5.4
+  effort: medium
+  config: {}
+```
+
+Auth strategies:
+
+- `secret_ref`
+  - resolve `auth.ref` from the usual repo `.env`, then `${WB_HOME}/.env`, then the raw shell environment
+  - the resolved `model` provider must be one of Pi's API-key providers supported by the adapter
+- `profile_path`
+  - accept a path to a Pi root, `.pi`, or `.pi/agent`
+  - copy portable `auth.json` and optional `models.json` from the resolved `.pi/agent` into the staged managed Pi home
+
+Pi-specific authored config keys in `harness.config`:
+
+- none in the first-party managed workflow surface
+
+Runtime behavior:
+
+- When `model` is set, it must use `<provider>/<model-id>` form, for example `openai/gpt-5.4` or `anthropic/claude-sonnet-4-6`.
+- Workflow-owned Pi turns always run in a Workbench-managed staged environment with `cwd = <stageSessionPath>/workspace`, `HOME = <stageSessionPath>/home`, and `PI_CODING_AGENT_DIR = <stageSessionPath>/home/.pi/agent`.
+- Workbench mirrors the live execution workspace into that staged workspace before the turn and mirrors changes back after the turn. The staged workspace excludes top-level repo `.pi/` state so managed workflow turns stay deterministic.
+- With `auth.strategy: secret_ref`, Workbench writes a staged Pi `auth.json` for the resolved provider and strips the source API-key env var from the Pi child process.
+- With `auth.strategy: profile_path`, Workbench copies only portable auth and model files into the staged Pi home, then regenerates `settings.json` for the staged run instead of reusing the source profile settings.
+- Workbench writes staged Pi settings that pin the default provider, model, and optional thinking level for the run while disabling Pi-owned auto-retry and compaction so Workbench remains the outer execution controller.
+- Workbench redacts Pi thinking blocks and thinking deltas before raw adapter events or harness events are written to disk.
+- Native chat uses the same harness id and supports both `managed` and `project`, with `managed` as the default chat workspace mode.
+
+For first-party portability, Pi supports the shared `low`, `medium`, and `high` effort values and additionally accepts `off`, `minimal`, and `xhigh`.
 
 Third-party harnesses follow the same structure. Core validation only requires that `harness.id` is a non-empty string and that `auth` plus `config` are objects. Availability is checked separately at runtime, so a syntactically valid workflow may still load as `unavailable` if its harness is not installed in the current runtime composition.
 

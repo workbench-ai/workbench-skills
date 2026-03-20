@@ -1,0 +1,4 @@
+interface:
+  display_name: "FactSet CLI"
+  short_description: "Discover and run FactSet API operations with the factset CLI"
+  default_prompt: "Use the FactSet CLI to discover the right API family and operation, inspect the expected input shape with --help or --example, run the narrowest matching request, and summarize the result clearly."

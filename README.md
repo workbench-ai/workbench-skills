@@ -13,28 +13,31 @@ Bootstrap, validate, run, inspect, and troubleshoot Workbench through the `workb
 Use when:
 
 - Setting up Workbench in a git repo
-- Installing starter workflows
-- Authoring or validating workflow YAML
-- Starting the local runtime or inspecting executions
-- Resuming waiting executions and reviewing traces or transcripts
+- Installing starter workflows and validating YAML
+- Running, resuming, and inspecting workflow executions
+
+### factset-cli
+
+Discover and run FactSet API operations through the `factset` CLI.
+
+Use when:
+
+- Looking up fundamentals, estimates, prices, filings, events, or news through FactSet
+- Finding the right FactSet API family and request shape from a business question
+- Running a concrete `factset` command and summarizing the result clearly
 
 ## Installation
 
 ```bash
 npx skills add workbench-ai/workbench-skills --skill workbench-cli
+npx skills add workbench-ai/workbench-skills --skill factset-cli
 ```
 
 ## Usage
 
 Skills are automatically available once installed. The agent will use them when relevant tasks are detected.
 
-Examples:
-
-```text
-Set up Workbench in this repo
-Validate this workflow and tell me how to run it locally
-Resume this waiting execution and show me the trace
-```
+The agent will pick the right installed skill when the task matches its trigger description.
 
 ## Skill Structure
 

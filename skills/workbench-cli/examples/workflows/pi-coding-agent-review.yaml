@@ -1,0 +1,50 @@
+metadata:
+  id: pi-coding-agent-review
+  name: Pi Coding Agent Review
+  description: Review a repo with the Pi coding agent in a managed workspace.
+
+state:
+  initial: in_progress
+  terminal:
+    - done
+    - failed
+    - canceled
+  on_attempt:
+    completed: done
+    failed: failed
+    canceled: canceled
+
+triggers: {}
+
+workspace:
+  mode: managed
+
+hooks:
+  after_create: |
+    git init .
+    git config user.email workbench@example.com
+    git config user.name "Workbench"
+    printf '# Pi review target\n' > README.md
+    git add README.md
+    git commit -m "seed workspace"
+  before_run: null
+  after_run: null
+  before_remove: null
+  timeout_ms: 60000
+  env: {}
+
+stages:
+  - id: review
+    prompt: |
+      Review the repository and write a concise summary of the current state to result.txt.
+    session: fresh
+    gate: null
+
+harness:
+  id: badlogic/pi-coding-agent
+  auth:
+    strategy: secret_ref
+    ref: OPENAI_API_KEY
+  model: openai/gpt-5.4
+  effort: medium
+  config: {}

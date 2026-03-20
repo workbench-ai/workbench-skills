@@ -33,7 +33,7 @@ The package name is scoped for GitHub Packages, but the executable command stays
 
 ## Publishing
 
-Maintainers publish the package family under `packages/` to GitHub Packages. The private CLI release is not a single-package publish: the repo ships `@workbench-ai/contracts`, `@workbench-ai/harness-sdk`, `@workbench-ai/platform-sdk`, `@workbench-ai/client`, `@workbench-ai/runtime`, `@workbench-ai/harness-openai-codex`, `@workbench-ai/harness-anthropic-claude-code`, `@workbench-ai/platform-local`, and `@workbench-ai/workbench` together under one shared release version.
+Maintainers publish the package family under `packages/` to GitHub Packages. The private CLI release is not a single-package publish: the repo ships `@workbench-ai/contracts`, `@workbench-ai/harness-sdk`, `@workbench-ai/platform-sdk`, `@workbench-ai/client`, `@workbench-ai/runtime`, `@workbench-ai/harness-openai-codex`, `@workbench-ai/harness-anthropic-claude-code`, `@workbench-ai/harness-badlogic-pi-coding-agent`, `@workbench-ai/platform-local`, and `@workbench-ai/workbench` together under one shared release version.
 
 Before publishing:
 
@@ -361,9 +361,9 @@ Env precedence is always:
 
 `WB_RUNTIME_URL` follows that same repo `.env` then `${WB_HOME}/.env` then process-environment precedence. When set, Workbench trims whitespace plus trailing slashes and uses the result as the canonical self URL exposed by the runtime.
 
-## Public Skill
+## Public Skills
 
-The canonical `workbench-cli` skill now ships only through the public `workbench-ai/workbench-skills` repository. The authored `SKILL.md` in this private repo is intentionally thin and routes the agent to the canonical references instead of restating command behavior. Users should install the skill with the upstream `skills` CLI:
+The public `workbench-ai/workbench-skills` repository is now the shared install surface for distro-level skills, including `workbench-cli` and `factset-cli`. The authored `workbench-cli` `SKILL.md` in this private repo is intentionally thin and routes the agent to the canonical references instead of restating command behavior. Users should install the skill with the upstream `skills` CLI:
 
 ```bash
 npx skills add workbench-ai/workbench-skills --skill workbench-cli
@@ -377,10 +377,13 @@ That public repo contains:
 - the same starter workflow YAML files referenced by `workbench template list` and `workbench init --template ...`
 - a small `evals/evals.json` seed for regression-testing or improving the skill itself
 
-Maintainers publish that repo from this monorepo with:
+Maintainers publish that repo from the outer distro root with one distro-owned flow:
 
-- `pnpm skills:public:build` to regenerate `.workbench/public-skills/workbench-skills`
-- `pnpm skills:public:validate` to run upstream `skills-ref validate`, `skills add --list`, and a temp-repo install smoke test against that generated repo
-- `pnpm skills:public:publish` to require a clean source worktree, rebuild the generated repo, and push it to `WORKBENCH_SKILLS_PUBLIC_REPO_URL` or the default `https://github.com/workbench-ai/workbench-skills.git` on `WORKBENCH_SKILLS_PUBLIC_BRANCH` or `main`
+- `pnpm products:sync` to clone or fast-forward the fixed nested product checkouts under `products/`
+- `pnpm skills:public:build` to regenerate `out/public-skills/workbench-skills`
+- `pnpm skills:public:validate` to run upstream `skills-ref validate`, `skills add --list`, and a temp-repo install smoke test against every generated skill in that repo
+- `pnpm skills:public:publish` to require all participating source worktrees to be clean, rebuild the generated repo, and push it to `WORKBENCH_SKILLS_PUBLIC_REPO_URL` or the default `https://github.com/workbench-ai/workbench-skills.git` on `WORKBENCH_SKILLS_PUBLIC_BRANCH` or `main`
+
+Skill discovery for that public repo is declarative. Each participating source repo exposes a root `public-skills.json`, and each authored public skill exposes a local `skill.assets.json` that declares which canonical docs or examples must be copied into the installable skill tree.
 
 For exact CLI syntax, use `workbench --help`, `workbench template --help`, `workbench workflow --help`, `workbench execution --help`, and `workbench execution action --help`.

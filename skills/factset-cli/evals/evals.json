@@ -1,0 +1,38 @@
+{
+  "skill_name": "factset-cli",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Find the latest news for Apple with FactSet and tell me the exact headline timestamp.",
+      "expected_output": "The response uses the FactSet CLI discovery flow, selects a concrete news-capable API and operation, and reports the exact timestamp with the command used.",
+      "files": [],
+      "expectations": [
+        "Uses `factset <api>` and `factset <api> <operation> --help` or `--example` before the final call when the API family is not already obvious",
+        "Reports the exact command used",
+        "Uses absolute dates or timestamps instead of relative wording like today"
+      ]
+    },
+    {
+      "id": 2,
+      "prompt": "When is GOOGL's next earnings date?",
+      "expected_output": "The response uses the Events API through the FactSet CLI, chooses the narrowest operation that exposes the next earnings event date, and reports the date clearly.",
+      "files": [],
+      "expectations": [
+        "Uses the `events` API family rather than inventing a synthetic namespace",
+        "Uses `--help` or `--example` to learn the expected input shape if needed",
+        "Reports an exact date"
+      ]
+    },
+    {
+      "id": 3,
+      "prompt": "Show me which filings sources are available and how I would search filings for AAPL-US.",
+      "expected_output": "The response uses the Global Filings API, distinguishes source discovery from filing search, and gives an example command for the next step.",
+      "files": [],
+      "expectations": [
+        "Uses `factset global-filings sources` for source discovery",
+        "Uses `factset global-filings filings --help` or `--example` to explain filing search input",
+        "Shows at least one exact CLI command for the user to run next"
+      ]
+    }
+  ]
+}
