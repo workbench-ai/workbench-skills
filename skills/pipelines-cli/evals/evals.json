@@ -1,0 +1,139 @@
+{
+  "owner_id": "pipelines-cli",
+  "suite_name": "pipelines-cli-product-local",
+  "suite_scope": "product-local",
+  "submission_schema_version": 1,
+  "suite_latency_expectation": {
+    "minimum_significant_improvement_ratio": 0.2,
+    "notes": "Each product-local task records a slower baseline and a faster target so maintainers can track ergonomic improvement without mixing in cross-product benchmark costs."
+  },
+  "evals": [
+    {
+      "id": "pipelines-validate-file",
+      "title": "Validate a standalone pipeline file",
+      "category": "validation",
+      "prompt": "Validate a standalone pipeline YAML file in a fresh git repo and summarize the result.",
+      "expected_output": "The response uses pipelines validate with an explicit file source, reports schema and readiness status, and does not initialize or start Flow.",
+      "files": [],
+      "required_skills": [
+        "pipelines-cli"
+      ],
+      "latency": {
+        "baseline_ms": 120000,
+        "target_ms": 60000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Pipelines CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "pipelines-cli"
+        },
+        {
+          "text": "records validate command evidence",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:pipelines|\\./bin/pipelines)\\s+validate\\b.*--file\\b"
+        },
+        {
+          "text": "reports readiness was checked",
+          "kind": "equals",
+          "path": "answer.readiness_checked",
+          "value": true
+        },
+        {
+          "text": "does not use Flow runtime commands",
+          "kind": "equals",
+          "path": "answer.used_flow_runtime",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "pipelines-dry-run-then-run",
+      "title": "Dry-run then execute once",
+      "category": "execution",
+      "prompt": "Run a deterministic standalone pipeline once after a dry-run preflight and report the side effect evidence.",
+      "expected_output": "The response validates readiness with pipelines run --dry-run before the real run, reports completed status, and names the output file or workspace evidence.",
+      "files": [],
+      "required_skills": [
+        "pipelines-cli"
+      ],
+      "latency": {
+        "baseline_ms": 180000,
+        "target_ms": 90000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Pipelines CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "pipelines-cli"
+        },
+        {
+          "text": "records dry-run command evidence",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:pipelines|\\./bin/pipelines)\\s+run\\b.*--dry-run\\b"
+        },
+        {
+          "text": "records run command evidence",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:pipelines|\\./bin/pipelines)\\s+run\\b.*(?:--file|--stdin)\\b"
+        },
+        {
+          "text": "reports completed execution",
+          "kind": "equals",
+          "path": "answer.status",
+          "value": "completed"
+        }
+      ]
+    },
+    {
+      "id": "pipelines-payload-and-mode",
+      "title": "Payload and workspace mode selection",
+      "category": "payloads",
+      "prompt": "Run a standalone pipeline with explicit payload input and choose scratch or project mode based on the requested side effects.",
+      "expected_output": "The response uses explicit payload flags, states the chosen workspace mode, and avoids removed Flow-owned pipeline flags.",
+      "files": [],
+      "required_skills": [
+        "pipelines-cli"
+      ],
+      "latency": {
+        "baseline_ms": 150000,
+        "target_ms": 75000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Pipelines CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "pipelines-cli"
+        },
+        {
+          "text": "records explicit payload command evidence",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "--(?:input|payload-json|payload-file)\\b"
+        },
+        {
+          "text": "reports workspace mode",
+          "kind": "matches",
+          "path": "answer.workspace_mode",
+          "value": "^(scratch|project)$"
+        },
+        {
+          "text": "does not use removed Flow-owned flags",
+          "kind": "equals",
+          "path": "answer.used_removed_pipeline_flags",
+          "value": false
+        }
+      ]
+    }
+  ]
+}
+

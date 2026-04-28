@@ -1,0 +1,32 @@
+version: 6
+name: artifact-eval
+candidate:
+  kind: command
+  root: candidate
+  entry: evaluate-artifacts.py
+  editable:
+    - evaluate-artifacts.py
+optimization:
+  goal: Improve the candidate so it satisfies the uploaded artifact cases.
+  proposer:
+    use: codex
+  selection:
+    use: greedy
+    metric: score
+    direction: maximize
+evaluation:
+  task: Score the candidate output against the uploaded artifact cases.
+  cases:
+    root: cases
+  environment:
+    use: oci
+    with:
+      image: docker://workbench/workbench-libreoffice-python:envv_libreoffice_python
+  runner:
+    use: command
+    with:
+      run: python "$WORKBENCH_CANDIDATE_DIR/evaluate-artifacts.py" --run-only
+  grader:
+    use: command
+    with:
+      run: python "$WORKBENCH_CANDIDATE_DIR/evaluate-artifacts.py" --grade-only

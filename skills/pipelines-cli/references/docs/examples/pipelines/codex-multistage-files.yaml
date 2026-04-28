@@ -1,0 +1,37 @@
+metadata:
+  id: codex-multistage-files
+  name: Codex Multistage Files
+hooks:
+  timeoutMs: 60000
+harnesses:
+  codex:
+    id: openai/codex
+    auth:
+      strategy: secret_ref
+      ref: OPENAI_API_KEY
+    model: gpt-5.4-mini
+    effort: low
+    config:
+      sandbox_mode: workspace-write
+stages:
+  - id: create-alpha
+    harness: codex
+    prompt: |
+      Create alpha.txt in the current workspace containing exactly FLOW_AGENT_ALPHA with no trailing newline.
+      Use this command: printf 'FLOW_AGENT_ALPHA' > alpha.txt
+      Do not modify any other files. Reply exactly FLOW_AGENT_ALPHA.
+    hooks:
+      after: |
+        set -eu
+        printf 'FLOW_AGENT_ALPHA' | cmp -s - alpha.txt
+  - id: create-beta
+    harness: codex
+    prompt: |
+      Read alpha.txt. If it contains exactly FLOW_AGENT_ALPHA, create beta.txt containing exactly FLOW_AGENT_ALPHA_DONE with no trailing newline.
+      Use this command: printf 'FLOW_AGENT_ALPHA_DONE' > beta.txt
+      Do not modify alpha.txt. Reply exactly FLOW_AGENT_ALPHA_DONE.
+    hooks:
+      after: |
+        set -eu
+        printf 'FLOW_AGENT_ALPHA' | cmp -s - alpha.txt
+        printf 'FLOW_AGENT_ALPHA_DONE' | cmp -s - beta.txt

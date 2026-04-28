@@ -1,0 +1,5 @@
+interface:
+  display_name: "Pipelines CLI"
+  short_description: "Validate and run standalone pipeline YAML or JSON files with pipelines"
+  default_prompt: "Use the Pipelines CLI for direct local one-shot pipeline execution. Verify pipelines is installed before using it; if it is missing, install @workbench-ai/pipeline-cli from GitHub Packages and stop cleanly if npm lacks @workbench-ai package access. Validate pipeline YAML or JSON with pipelines validate using --file PATH or --stdin, dry-run with pipelines run --dry-run for readiness, then run once with pipelines run. Default to scratch mode and use --mode project only when the user explicitly wants side effects in the target repo. Do not use Flow runtime commands or removed Flow-owned pipeline flags."
+

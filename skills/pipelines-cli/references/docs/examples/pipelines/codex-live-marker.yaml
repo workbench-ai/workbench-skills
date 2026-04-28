@@ -1,0 +1,19 @@
+metadata:
+  id: codex-live-marker
+  name: Codex Live Marker
+harnesses:
+  codex:
+    id: openai/codex
+    auth:
+      strategy: secret_ref
+      ref: OPENAI_API_KEY
+    model: gpt-5.4-mini
+    effort: low
+    config:
+      sandbox_mode: workspace-write
+stages:
+  - id: write-marker
+    harness: codex
+    prompt: |
+      Create a file named live-pipeline-output.txt containing exactly FLOW_PIPELINE_LIVE_OK followed by a newline.
+      Do not modify any other files. Reply with FLOW_PIPELINE_LIVE_OK when the file is written.

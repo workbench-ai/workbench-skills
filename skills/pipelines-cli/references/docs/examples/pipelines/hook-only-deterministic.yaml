@@ -1,0 +1,7 @@
+metadata:
+  id: hook-only-deterministic
+  name: Hook Only Deterministic
+hooks:
+  beforeRun: |
+    printf 'hello from detached pipeline\n' > pipeline-output.log
+stages: []

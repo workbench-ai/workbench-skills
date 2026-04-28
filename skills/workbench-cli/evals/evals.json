@@ -1,0 +1,414 @@
+{
+  "owner_id": "workbench-cli",
+  "suite_name": "workbench-cli-hosted",
+  "suite_scope": "product-local",
+  "submission_schema_version": 1,
+  "suite_latency_expectation": {
+    "minimum_significant_improvement_ratio": 0.2,
+    "notes": "Tasks measure whether an agent can drive the cloud-first CLI and use hosted project commands without relying on private runtime state."
+  },
+  "evals": [
+    {
+      "id": "install-or-verify-cli",
+      "title": "Verify or install the Workbench CLI",
+      "category": "cli_install",
+      "prompt": "Set up Workbench CLI access for this repo from scratch. Assume the `workbench` binary is not installed. Install the published CLI, verify the binary, authenticate to `https://v2.workbench.ai`, and report whether hosted setup can continue.",
+      "expected_output": "The response uses the Workbench CLI skill, installs the published GitHub Packages CLI only because the binary is missing, verifies the binary, starts the Workbench login flow, and explains that npm package-auth failures should stop setup cleanly.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 120000,
+        "target_ms": 60000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "configures the Workbench package scope",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "npm\\s+config\\s+set\\s+@workbench-ai:registry\\s+https://npm\\.pkg\\.github\\.com"
+        },
+        {
+          "text": "installs the published CLI package",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "npm\\s+(?:install|i)\\s+-g\\s+@workbench-ai/workbench-cli\\b"
+        },
+        {
+          "text": "verifies the workbench binary",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench\\s+--version|command\\s+-v\\s+workbench)\\b"
+        },
+        {
+          "text": "starts hosted Workbench login",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)workbench\\s+login(?:\\s+--base-url\\s+https://v2\\.workbench\\.ai)?\\b"
+        },
+        {
+          "text": "reports install is conditional on a missing binary",
+          "kind": "equals",
+          "path": "answer.installs_only_when_missing",
+          "value": true
+        },
+        {
+          "text": "reports package auth failures stop setup cleanly",
+          "kind": "equals",
+          "path": "answer.package_auth_failure_stops_setup",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "hosted-project-and-spec",
+      "title": "Create a hosted project and apply a spec",
+      "category": "hosted_spec",
+      "prompt": "Create a hosted Workbench project named `invoice-parser`, sync `workbench.yaml` plus local candidate and case snapshots, and report the project id plus the sync result.",
+      "expected_output": "The response targets a hosted Workbench server, creates or selects a project with the cloud-first CLI, syncs the local source, and reports hosted project metadata.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 150000,
+        "target_ms": 75000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "creates a hosted project",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+launch\\s+--name\\b"
+        },
+        {
+          "text": "syncs the local source",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+sync\\b"
+        },
+        {
+          "text": "reports that hosted project state is durable",
+          "kind": "equals",
+          "path": "answer.uses_hosted_project_state",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "existing-workflow-eval-authoring",
+      "title": "Author an eval from an existing workflow",
+      "category": "eval_authoring",
+      "prompt": "Create a hosted Workbench eval around an existing command `python scripts/check_report.py --cases cases --out reward.json`. Write the project-shaped files, adapt the runner/grader contract, validate `workbench.yaml`, and explain how to sync and start one smoke run.",
+      "expected_output": "The response uses the Workbench CLI skill eval-authoring docs, starts from the existing-workflow guide, writes a hosted `workbench.yaml`, wraps the existing command in runner/grader phases where the grader writes `WORKBENCH_REWARD_FILE` with a finite `score`, and uses `workbench check`, `workbench sync`, and a hosted smoke workflow.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 210000,
+        "target_ms": 105000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "routes through the existing-workflow authoring guide",
+          "kind": "equals",
+          "path": "answer.uses_existing_workflow_guide",
+          "value": true
+        },
+        {
+          "text": "writes a hosted workbench.yaml spec",
+          "kind": "equals",
+          "path": "answer.writes_workbench_yaml",
+          "value": true
+        },
+        {
+          "text": "requires the WORKBENCH_REWARD_FILE score contract",
+          "kind": "equals",
+          "path": "answer.requires_workbench_reward_file_score",
+          "value": true
+        },
+        {
+          "text": "validates the local spec",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+check\\b"
+        }
+      ]
+    },
+    {
+      "id": "artifact-first-eval-authoring",
+      "title": "Author an eval from artifacts",
+      "category": "eval_authoring",
+      "prompt": "Create a hosted Workbench eval from uploaded artifacts: a source DOCX, golden DOCX, and reference XLSX. Build cases, extract stable evidence, choose an Office-capable runtime, write a starter evaluator, validate the spec, and describe the first smoke run.",
+      "expected_output": "The response uses the Workbench CLI skill artifact-first docs, chooses focused artifact recipes, creates project-shaped candidate and case files, requires non-empty expected evidence, uses an Office-capable image such as `docker://workbench/workbench-libreoffice-python:envv_libreoffice_python`, writes a deterministic evaluator, and validates the spec before sync/run commands.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 240000,
+        "target_ms": 120000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "routes through the artifact-first authoring guide",
+          "kind": "equals",
+          "path": "answer.uses_artifact_first_guide",
+          "value": true
+        },
+        {
+          "text": "loads only the relevant artifact recipes",
+          "kind": "includes",
+          "path": "answer.loaded_artifact_recipes",
+          "value": "docx"
+        },
+        {
+          "text": "requires non-empty expected evidence",
+          "kind": "equals",
+          "path": "answer.requires_non_empty_expected_evidence",
+          "value": true
+        },
+        {
+          "text": "uses the project-shaped template layout",
+          "kind": "equals",
+          "path": "answer.template_layout",
+          "value": "project-shaped"
+        },
+        {
+          "text": "chooses an Office-capable runtime image",
+          "kind": "equals",
+          "path": "answer.runtime_image",
+          "value": "docker://workbench/workbench-libreoffice-python:envv_libreoffice_python"
+        },
+        {
+          "text": "validates the local spec",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+check\\b"
+        }
+      ]
+    },
+    {
+      "id": "hosted-upload-and-run",
+      "title": "Sync snapshots and start a hosted run",
+      "category": "hosted_run",
+      "prompt": "Sync `./candidate` and `./cases` to an existing hosted project, start one improve run with budget 1 and samples 1, watch it to terminal status, and report the run id and candidate id.",
+      "expected_output": "The response treats local directories as upload sources, syncs them, starts a hosted improve run, watches the hosted run, and reports the resulting candidate.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 180000,
+        "target_ms": 90000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "syncs local source",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+sync\\b"
+        },
+        {
+          "text": "starts a hosted run",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+improve\\b"
+        },
+        {
+          "text": "watches the hosted run",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+(?:watch\\b|improve\\b[^\\n]*--watch)"
+        },
+        {
+          "text": "reports the requested budget",
+          "kind": "equals",
+          "path": "answer.budget",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "id": "hosted-custom-environment",
+      "title": "Create a custom Dockerfile environment",
+      "category": "hosted_environment",
+      "prompt": "Create a project-specific Workbench runtime from `./Dockerfile` for an existing hosted project, list project environments, and report the exact image reference that the spec should use.",
+      "expected_output": "The response uses the environment create command, lists environments for the project, and reports that specs must reference the returned ready version imageRef as evaluation.environment.with.image.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 150000,
+        "target_ms": 75000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "creates the hosted Dockerfile environment",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+envs\\s+create\\b"
+        },
+        {
+          "text": "lists project environments",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+envs\\s+list\\b"
+        },
+        {
+          "text": "reports exact runtime image ref",
+          "kind": "equals",
+          "path": "answer.reports_runtime_image",
+          "value": true
+        }
+      ]
+    },
+    {
+      "id": "hosted-candidate-inspection",
+      "title": "Inspect and export a hosted candidate",
+      "category": "candidate_inspection",
+      "prompt": "List hosted candidates for a project, list files for the selected candidate, preview `workbench-run-summary.md`, and export the candidate to `./best-candidate`.",
+      "expected_output": "The response uses hosted candidate inspection commands and pulls the selected candidate without mutating hosted state.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 120000,
+        "target_ms": 60000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "lists hosted candidates",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+candidates\\s+list\\b"
+        },
+        {
+          "text": "lists candidate files",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+candidates\\s+files\\b"
+        },
+        {
+          "text": "previews a candidate file",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+candidates\\s+preview\\b"
+        },
+        {
+          "text": "pulls the hosted candidate",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+(?:pull|candidates\\s+pull)\\b"
+        },
+        {
+          "text": "reports export as non-mutating",
+          "kind": "equals",
+          "path": "answer.export_mutates_hosted_state",
+          "value": false
+        }
+      ]
+    },
+    {
+      "id": "hosted-api-targeting",
+      "title": "Configure the hosted API target",
+      "category": "configuration",
+      "prompt": "Configure the CLI to target `https://v2.workbench.ai`, explain the environment-variable override for a one-off command, and state whether the user needs a git repository or local runtime directory.",
+      "expected_output": "The response uses login or WORKBENCH_API_URL for hosted API targeting and makes clear that git and local runtime state are not required.",
+      "files": [],
+      "required_skills": [
+        "workbench-cli"
+      ],
+      "latency": {
+        "baseline_ms": 90000,
+        "target_ms": 45000,
+        "significant_improvement_ratio": 0.2
+      },
+      "assertions": [
+        {
+          "text": "uses the Workbench CLI skill",
+          "kind": "includes",
+          "path": "skills_used",
+          "value": "workbench-cli"
+        },
+        {
+          "text": "records login command evidence",
+          "kind": "matches",
+          "path": "tool_commands",
+          "value": "(?:^|\\s)(?:workbench|\\./bin/workbench)\\s+login\\s+--base-url\\s+https://v2\\.workbench\\.ai\\b"
+        },
+        {
+          "text": "mentions environment override",
+          "kind": "equals",
+          "path": "answer.env_override",
+          "value": "WORKBENCH_API_URL"
+        },
+        {
+          "text": "reports git is not required",
+          "kind": "equals",
+          "path": "answer.requires_git_repo",
+          "value": false
+        },
+        {
+          "text": "reports local runtime directory is not required",
+          "kind": "equals",
+          "path": "answer.requires_local_runtime",
+          "value": false
+        }
+      ]
+    }
+  ]
+}
